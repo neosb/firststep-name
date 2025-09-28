@@ -46,14 +46,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
 
+      - name: Install cross
+        run: cargo install cross
+
       - name: Build all release binaries
         run: |
-          cargo build --release --bin $BIN_NAME --target x86_64-unknown-linux-gnu
-          cargo build --release --bin $BIN_NAME --target aarch64-unknown-linux-gnu
-          cargo build --release --bin $BIN_NAME --target armv7-unknown-linux-gnueabihf
-          cargo build --release --bin $BIN_NAME --target x86_64-apple-darwin
-          cargo build --release --bin $BIN_NAME --target aarch64-apple-darwin
-          cargo build --release --bin $BIN_NAME --target x86_64-pc-windows-gnu
+          cross build --release --bin $BIN_NAME --target x86_64-unknown-linux-gnu
+          cross build --release --bin $BIN_NAME --target aarch64-unknown-linux-gnu
+          cross build --release --bin $BIN_NAME --target armv7-unknown-linux-gnueabihf
+          cross build --release --bin $BIN_NAME --target x86_64-apple-darwin
+          cross build --release --bin $BIN_NAME --target aarch64-apple-darwin
+          cross build --release --bin $BIN_NAME --target x86_64-pc-windows-gnu
 
       - name: Prepare release artifacts
         run: |
