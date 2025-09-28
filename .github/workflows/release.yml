@@ -88,24 +88,3 @@ jobs:
             gh release upload v${{ github.run_number }} "$file" --repo ${{ github.repository }}
           done
         shell: bash
-
-      - name: Install GitHub CLI
-        run: sudo apt-get install -y gh
-        with:
-          tag_name: v${{ github.run_number }}
-          release_name: Release v${{ github.run_number }}
-          body: |
-            Automated release with binaries for Linux, macOS, and Windows (x64 and ARM).
-            Review and publish this release.
-          draft: true
-          prerelease: false
-
-      - name: Upload release asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./${{ matrix.bin_name }}.${{ matrix.archive_ext }}
-          asset_name: ${{ matrix.bin_name }}.${{ matrix.archive_ext }}
-          asset_content_type: application/octet-stream # Generic content type, adjust if known (e.g., application/gzip, application/zip)
