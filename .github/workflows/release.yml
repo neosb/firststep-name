@@ -1,0 +1,110 @@
+name: Create Draft Release
+
+on:
+  push:
+    branches:
+      - main # Or your default branch
+
+jobs:
+  build-release:
+    strategy:
+      matrix:
+        include:
+          # Linux targets
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            archive_ext: tar.gz
+            bin_name: firststep_name
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            archive_ext: tar.gz
+            bin_name: firststep_name
+          - target: armv7-unknown-linux-gnueabihf
+            os: ubuntu-latest
+            archive_ext: tar.gz
+            bin_name: firststep_name
+          # macOS targets
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            archive_ext: tar.gz
+            bin_name: firststep_name
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            archive_ext: tar.gz
+            bin_name: firststep_name
+          # Windows targets
+          - target: x86_64-pc-windows-gnu
+            os: windows-latest
+            archive_ext: zip
+            bin_name: firststep_name.exe
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          profile: minimal
+
+      - name: Install cross-compile targets
+        # This step only needs to run once if all targets are installed on the same runner OS
+        # but for simplicity and clarity with matrix strategy, we repeat it.
+        # A more optimized approach could use a dedicated build job for target installation.
+        run: |
+          rustup target add ${{ matrix.target }}
+
+      - name: Cache Cargo dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Build release binary
+        uses: houseabsolute/actions-rust-cross@v0
+        with:
+          target: ${{ matrix.target }}
+          command: cargo build --release --bin firststep_name
+
+      - name: Compress release artifact
+        run: |
+          cd target/${{ matrix.target }}/release/
+          if [ "${{ matrix.archive_ext }}" = "tar.gz" ]; then
+            tar -czvf ../../${{ matrix.bin_name }}.${{ matrix.archive_ext }} ${{ matrix.bin_name }}
+          elif [ "${{ matrix.archive_ext }}" = "zip" ]; then
+            7z a ../../${{ matrix.bin_name }}.${{ matrix.archive_ext }} ${{ matrix.bin_name }}
+          fi
+        shell: bash # Ensure bash is used for tar/7z commands
+
+      - name: Create Release Draft
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.run_number }}
+          release_name: Release v${{ github.run_number }}
+          body: |
+            Automated release with binaries for Linux, macOS, and Windows (x64 and ARM).
+            Review and publish this release.
+          draft: true
+          prerelease: false
+
+      - name: Upload release asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./target/${{ matrix.target }}/release/${{ matrix.bin_name }} # This path will be incorrect after compression
+          asset_name: ${{ matrix.bin_name }}.${{ matrix.archive_ext }}
+          asset_content_type: application/octet-stream # Generic content type, adjust if known (e.g., application/gzip, application/zip)
