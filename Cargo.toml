@@ -2,6 +2,10 @@
 name = "firststep-name"
 version = "0.1.0"
 edition = "2024"
+authors = ["Neosb <neosb@nuteksecurity.com>"]
+repository = "https://github.com/neosb/firststep-name.git"
+license = "MIT OR Apache-2.0"
+categories = ["web", "cli"]
 
 [dependencies]
 reqwest = { version = "0.12.15", features = ["json"] }
@@ -12,3 +16,22 @@ colored = "3.0.0"
 clap = { version = "4.5.32", features = ["derive"] }
 chrono = "0.4.40"
 url = "2.5.4"
+poem = { version = "3.1.8", features = ["websocket", "test", "static-files"] }
+libc = "0.2.171"
+askama = { version = "0.13.0", features = ["code-in-doc"] }
+tokio-tungstenite = "0.26.2"
+futures-util = "0.3.31"
+
+[dev-dependencies]
+serial_test = "2.0.0"
+
+[[bin]]
+name = "firststep_name"
+path = "src/main.rs"
+
+[lib]
+name = "firststep_name_lib"
+path = "src/lib.rs"
+
+[package.metadata.askama]
+template_dir = "templates"

@@ -1,0 +1,37 @@
+<!doctype html>
+<html>
+    <head>
+        {% include "head.html" %}
+    </head>
+    <body>
+        <div class="container">
+            {% include "header.html" %}
+            <main>
+                <p>Check the availability of your name on social platforms</p>
+                <form id="username-form">
+                    <div class="form-group">
+                        <input
+                            type="text"
+                            id="username"
+                            name="username"
+                            placeholder="Enter username"
+                            required
+                        />
+                    </div>
+                    <button type="submit" class="btn">
+                        Check Availability
+                    </button>
+                </form>
+                <div id="progress-container">
+                    <div id="progress-bar-container">
+                        <div id="progress-bar" style="width: 0%"></div>
+                    </div>
+                    <div id="progress-text">0%</div>
+                </div>
+                <div id="results"></div>
+            </main>
+            {% include "footer.html" %}
+        </div>
+        {% include "script.html" %}
+    </body>
+</html>
