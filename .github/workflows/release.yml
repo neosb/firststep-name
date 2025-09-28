@@ -3,42 +3,14 @@ name: Create Draft Release
 on:
   push:
     branches:
-      - main # Or your default branch
+      - main
 
 jobs:
   build-release:
-    strategy:
-      matrix:
-        include:
-          # Linux targets
-          - target: x86_64-unknown-linux-gnu
-            os: ubuntu-latest
-            archive_ext: tar.gz
-            bin_name: firststep_name
-          - target: aarch64-unknown-linux-gnu
-            os: ubuntu-latest
-            archive_ext: tar.gz
-            bin_name: firststep_name
-          - target: armv7-unknown-linux-gnueabihf
-            os: ubuntu-latest
-            archive_ext: tar.gz
-            bin_name: firststep_name
-          # macOS targets
-          - target: x86_64-apple-darwin
-            os: macos-latest
-            archive_ext: tar.gz
-            bin_name: firststep_name
-          - target: aarch64-apple-darwin
-            os: macos-latest
-            archive_ext: tar.gz
-            bin_name: firststep_name
-          # Windows targets
-          - target: x86_64-pc-windows-gnu
-            os: windows-latest
-            archive_ext: zip
-            bin_name: firststep_name.exe
+    runs-on: ubuntu-latest
 
-    runs-on: ${{ matrix.os }}
+    env:
+      BIN_NAME: firststep_name
 
     steps:
       - name: Checkout code
@@ -52,11 +24,13 @@ jobs:
           profile: minimal
 
       - name: Install cross-compile targets
-        # This step only needs to run once if all targets are installed on the same runner OS
-        # but for simplicity and clarity with matrix strategy, we repeat it.
-        # A more optimized approach could use a dedicated build job for target installation.
         run: |
-          rustup target add ${{ matrix.target }}
+          rustup target add x86_64-unknown-linux-gnu
+          rustup target add aarch64-unknown-linux-gnu
+          rustup target add armv7-unknown-linux-gnueabihf
+          rustup target add x86_64-apple-darwin
+          rustup target add aarch64-apple-darwin
+          rustup target add x86_64-pc-windows-gnu
 
       - name: Cache Cargo dependencies
         uses: actions/cache@v3
@@ -69,28 +43,54 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
 
-      - name: Build release binary
-        uses: houseabsolute/actions-rust-cross@v0
-        with:
-          target: ${{ matrix.target }}
-          command: cargo build --release --bin firststep_name
-
-      - name: Compress release artifact
+      - name: Build all release binaries
         run: |
-          ARTIFACT_PATH="target/${{ matrix.target }}/release/${{ matrix.bin_name }}"
-          OUTPUT_PATH="../../${{ matrix.bin_name }}.${{ matrix.archive_ext }}"
-          if [ "${{ matrix.archive_ext }}" = "tar.gz" ]; then
-            tar -czvf "${OUTPUT_PATH}" "${ARTIFACT_PATH}"
-          elif [ "${{ matrix.archive_ext }}" = "zip" ]; then
-            7z a "${OUTPUT_PATH}" "${ARTIFACT_PATH}"
-          fi
-        shell: bash # Ensure bash is used for tar/7z commands
+          cargo build --release --bin $BIN_NAME --target x86_64-unknown-linux-gnu
+          cargo build --release --bin $BIN_NAME --target aarch64-unknown-linux-gnu
+          cargo build --release --bin $BIN_NAME --target armv7-unknown-linux-gnueabihf
+          cargo build --release --bin $BIN_NAME --target x86_64-apple-darwin
+          cargo build --release --bin $BIN_NAME --target aarch64-apple-darwin
+          cargo build --release --bin $BIN_NAME --target x86_64-pc-windows-gnu
+
+      - name: Prepare release artifacts
+        run: |
+          mkdir -p release_artifacts
+          # Linux
+          tar -czvf release_artifacts/firststep_name-x86_64-unknown-linux-gnu.tar.gz -C target/x86_64-unknown-linux-gnu/release firststep_name
+          tar -czvf release_artifacts/firststep_name-aarch64-unknown-linux-gnu.tar.gz -C target/aarch64-unknown-linux-gnu/release firststep_name
+          tar -czvf release_artifacts/firststep_name-armv7-unknown-linux-gnueabihf.tar.gz -C target/armv7-unknown-linux-gnueabihf/release firststep_name
+          # macOS
+          tar -czvf release_artifacts/firststep_name-x86_64-apple-darwin.tar.gz -C target/x86_64-apple-darwin/release firststep_name
+          tar -czvf release_artifacts/firststep_name-aarch64-apple-darwin.tar.gz -C target/aarch64-apple-darwin/release firststep_name
+          # Windows
+          zip -j release_artifacts/firststep_name-x86_64-pc-windows-gnu.zip target/x86_64-pc-windows-gnu/release/firststep_name.exe
 
       - name: Create Release Draft
         id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.run_number }}
+          release_name: Release v${{ github.run_number }}
+          body: |
+            Automated release with binaries for Linux, macOS, and Windows (x64 and ARM).
+            Review and publish this release.
+          draft: true
+          prerelease: false
+
+      - name: Upload release assets
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for file in release_artifacts/*; do
+            echo "Uploading $file"
+            gh release upload v${{ github.run_number }} "$file" --repo ${{ github.repository }}
+          done
+        shell: bash
+
+      - name: Install GitHub CLI
+        run: sudo apt-get install -y gh
         with:
           tag_name: v${{ github.run_number }}
           release_name: Release v${{ github.run_number }}
