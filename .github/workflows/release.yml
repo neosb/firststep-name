@@ -77,11 +77,12 @@ jobs:
 
       - name: Compress release artifact
         run: |
-          cd target/${{ matrix.target }}/release/
+          ARTIFACT_PATH="target/${{ matrix.target }}/release/${{ matrix.bin_name }}"
+          OUTPUT_PATH="../../${{ matrix.bin_name }}.${{ matrix.archive_ext }}"
           if [ "${{ matrix.archive_ext }}" = "tar.gz" ]; then
-            tar -czvf ../../${{ matrix.bin_name }}.${{ matrix.archive_ext }} ${{ matrix.bin_name }}
+            tar -czvf "${OUTPUT_PATH}" "${ARTIFACT_PATH}"
           elif [ "${{ matrix.archive_ext }}" = "zip" ]; then
-            7z a ../../${{ matrix.bin_name }}.${{ matrix.archive_ext }} ${{ matrix.bin_name }}
+            7z a "${OUTPUT_PATH}" "${ARTIFACT_PATH}"
           fi
         shell: bash # Ensure bash is used for tar/7z commands
 
@@ -105,6 +106,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./target/${{ matrix.target }}/release/${{ matrix.bin_name }} # This path will be incorrect after compression
+          asset_path: ./${{ matrix.bin_name }}.${{ matrix.archive_ext }}
           asset_name: ${{ matrix.bin_name }}.${{ matrix.archive_ext }}
           asset_content_type: application/octet-stream # Generic content type, adjust if known (e.g., application/gzip, application/zip)
