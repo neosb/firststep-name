@@ -65,7 +65,7 @@ jobs:
         shell: bash
         env:
           OPENSSL_NO_VENDOR: "1"
-        run: cargo build --release --bin $BIN_NAME --target ${{ matrix.target }}
+        run: choco install openssl; cargo build --release --bin $BIN_NAME --target ${{ matrix.target }}
 
       - name: Prepare release artifact
         run: |
