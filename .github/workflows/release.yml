@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      BIN_NAME: firststep_name
+      BIN_NAME: firststep-name
 
     steps:
       - name: Checkout code
@@ -27,17 +27,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y pkg-config libssl-dev
-
-      - name: Find openssl.pc and set PKG_CONFIG_PATH
-        run: |
-          set -e
-          OPENSSL_PC=$(dpkg -L libssl-dev | grep openssl.pc | head -n1)
-          if [ -z "$OPENSSL_PC" ]; then
-            echo "openssl.pc not found!"
-            exit 1
-          fi
-          export PKG_CONFIG_PATH=$(dirname "$OPENSSL_PC")
-          echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH" >> $GITHUB_ENV
 
       - name: Install cross-compile targets
         run: |
@@ -63,9 +52,6 @@ jobs:
         run: cargo install cross
 
       - name: Build all release binaries
-        env:
-          OPENSSL_STATIC: "1"
-          PKG_CONFIG_PATH: ${{ env.PKG_CONFIG_PATH }}
         run: |
           cross build --release --bin $BIN_NAME --target x86_64-unknown-linux-gnu
           cross build --release --bin $BIN_NAME --target aarch64-unknown-linux-gnu
