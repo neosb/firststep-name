@@ -5,6 +5,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+
 jobs:
   build-release:
     strategy:
@@ -128,8 +131,10 @@ jobs:
 
       - name: Upload release assets
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
+          sleep 11 # Wait a moment to ensure the release is fully created
+          gh release list --repo ${{ github.repository }}
           for file in release_artifacts/**/*; do
             echo "Uploading $file"
             gh release upload v${{ github.run_number }} "$file" --repo ${{ github.repository }}
