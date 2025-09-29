@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      BIN_NAME: firststep-name
+      BIN_NAME: firststep_name
 
     steps:
       - name: Checkout code
