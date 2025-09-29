@@ -65,7 +65,9 @@ Skip to number 4. if you're not interested in the code
         ```
         The web server will be available at `http://127.0.0.1:3003`.
 
-5.  **Configuration:**
+5. You can also get the latest working version on GitHub releses page.
+
+6.  **Configuration:**
     The `social_sites.json` file in the project root contains the data for sites to check. You can modify this file to add or remove platforms. If the file is missing, the application will attempt to download it from GitHub.
 
 ## Contributing
