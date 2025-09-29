@@ -8,7 +8,7 @@ license = "MIT OR Apache-2.0"
 categories = ["web", "cli"]
 
 [dependencies]
-reqwest = { version = "0.12.15", features = ["json"] }
+reqwest = { version = "0.12.15", features = ["json", "rustls-tls"] }
 tokio = { version = "1.44.1", features = ["full"] }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
@@ -19,9 +19,8 @@ url = "2.5.4"
 poem = { version = "3.1.8", features = ["websocket", "test", "static-files"] }
 libc = "0.2.171"
 askama = { version = "0.13.0", features = ["code-in-doc"] }
-tokio-tungstenite = "0.26.2"
+tokio-tungstenite = { version = "0.26.2", features = ["rustls"] }
 futures-util = "0.3.31"
-openssl = { version = "0.10", features = ["vendored"] }
 
 [dev-dependencies]
 serial_test = "2.0.0"
@@ -36,9 +35,3 @@ path = "src/lib.rs"
 
 [package.metadata.askama]
 template_dir = "templates"
-
-[features]
-# If compiling on a system without OpenSSL installed, or cross-compiling for a different
-# architecture, enable this feature to compile OpenSSL as part of the build.
-# See https://docs.rs/openssl/#vendored for more.
-static_ssl = ['openssl/vendored']
