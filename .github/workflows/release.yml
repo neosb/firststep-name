@@ -60,12 +60,27 @@ jobs:
         if: runner.os == 'macOS'
         run: cargo build --release --bin $BIN_NAME --target ${{ matrix.target }}
 
+      - name: Install MSYS2 and MinGW OpenSSL
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          choco install msys2
+          # Add MSYS2 to PATH
+          echo "C:/tools/msys64/usr/bin" >> $GITHUB_PATH
+          echo "C:/tools/msys64/mingw64/bin" >> $GITHUB_PATH
+          # Install MinGW OpenSSL and pkg-config
+          C:/tools/msys64/usr/bin/bash -lc "pacman -Sy --noconfirm mingw-w64-x86_64-openssl pkgconf"
+          # Verify installation
+          C:/tools/msys64/usr/bin/bash -lc "which openssl"
+          C:/tools/msys64/usr/bin/bash -lc "openssl version"
+          C:/tools/msys64/usr/bin/bash -lc "pkg-config --libs --cflags openssl"
+        
       - name: Build binary (Windows)
         if: runner.os == 'Windows'
         shell: bash
         env:
           OPENSSL_NO_VENDOR: "1"
-        run: choco install openssl; cargo build --release --bin $BIN_NAME --target ${{ matrix.target }}
+        run: cargo build --release --bin $BIN_NAME --target ${{ matrix.target }}
 
       - name: Prepare release artifact
         run: |
