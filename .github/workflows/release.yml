@@ -7,7 +7,29 @@ on:
 
 jobs:
   build-release:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            archive: tar.gz
+          - runner: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            archive: tar.gz
+          - runner: ubuntu-latest
+            target: armv7-unknown-linux-gnueabihf
+            archive: tar.gz
+          - runner: macos-latest
+            target: x86_64-apple-darwin
+            archive: tar.gz
+          - runner: macos-latest
+            target: aarch64-apple-darwin
+            archive: tar.gz
+          - runner: windows-latest
+            target: x86_64-pc-windows-gnu
+            archive: zip
+
+    runs-on: ${{ matrix.runner }}
 
     env:
       BIN_NAME: firststep_name
@@ -23,50 +45,47 @@ jobs:
           override: true
           profile: minimal
 
-      - name: Install cross-compile targets
-        run: |
-          rustup target add x86_64-unknown-linux-gnu
-          rustup target add aarch64-unknown-linux-gnu
-          rustup target add armv7-unknown-linux-gnueabihf
-          rustup target add x86_64-apple-darwin
-          rustup target add aarch64-apple-darwin
-          rustup target add x86_64-pc-windows-gnu
+      - name: Install cross-compile target
+        run: rustup target add ${{ matrix.target }}
 
-      - name: Cache Cargo dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
-
-      - name: Install cross
+      - name: Install cross (Linux only)
+        if: runner.os == 'Linux'
         run: cargo install cross
 
-      - name: Build all release binaries
+      - name: Build binary
         run: |
-          cross build --release --bin $BIN_NAME --target x86_64-unknown-linux-gnu
-          cross build --release --bin $BIN_NAME --target aarch64-unknown-linux-gnu
-          cross build --release --bin $BIN_NAME --target armv7-unknown-linux-gnueabihf
-          cross build --release --bin $BIN_NAME --target x86_64-apple-darwin
-          cross build --release --bin $BIN_NAME --target aarch64-apple-darwin
-          cross build --release --bin $BIN_NAME --target x86_64-pc-windows-gnu
+          if [ "${{ runner.os }}" = "Linux" ]; then
+            cross build --release --bin $BIN_NAME --target ${{ matrix.target }}
+          else
+            cargo build --release --bin $BIN_NAME --target ${{ matrix.target }}
+          fi
 
-      - name: Prepare release artifacts
+      - name: Prepare release artifact
         run: |
           mkdir -p release_artifacts
-          # Linux
-          tar -czvf release_artifacts/firststep_name-x86_64-unknown-linux-gnu.tar.gz -C target/x86_64-unknown-linux-gnu/release firststep_name
-          tar -czvf release_artifacts/firststep_name-aarch64-unknown-linux-gnu.tar.gz -C target/aarch64-unknown-linux-gnu/release firststep_name
-          tar -czvf release_artifacts/firststep_name-armv7-unknown-linux-gnueabihf.tar.gz -C target/armv7-unknown-linux-gnueabihf/release firststep_name
-          # macOS
-          tar -czvf release_artifacts/firststep_name-x86_64-apple-darwin.tar.gz -C target/x86_64-apple-darwin/release firststep_name
-          tar -czvf release_artifacts/firststep_name-aarch64-apple-darwin.tar.gz -C target/aarch64-apple-darwin/release firststep_name
-          # Windows
-          zip -j release_artifacts/firststep_name-x86_64-pc-windows-gnu.zip target/x86_64-pc-windows-gnu/release/firststep_name.exe
+          if [ "${{ matrix.archive }}" = "tar.gz" ]; then
+            tar -czvf release_artifacts/${BIN_NAME}-${{ matrix.target }}.tar.gz -C target/${{ matrix.target }}/release $BIN_NAME${{ runner.os == 'Windows' && '.exe' || '' }}
+          else
+            zip -j release_artifacts/${BIN_NAME}-${{ matrix.target }}.zip target/${{ matrix.target }}/release/${BIN_NAME}.exe
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}
+          path: release_artifacts/*
+
+  release:
+    needs: build-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release_artifacts
+
+      - name: Install GitHub CLI
+        run: sudo apt-get install -y gh
 
       - name: Create Release Draft
         id: create_release
@@ -86,7 +105,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          for file in release_artifacts/*; do
+          for file in release_artifacts/**/*; do
             echo "Uploading $file"
             gh release upload v${{ github.run_number }} "$file" --repo ${{ github.repository }}
           done
