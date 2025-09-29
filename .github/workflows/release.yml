@@ -81,6 +81,7 @@ jobs:
         env:
           OPENSSL_NO_VENDOR: "1"
           PKG_CONFIG_PATH: "/mingw64/lib/pkgconfig"
+          OPENSSL_DIR: "/mingw64"
         run: cargo build --release --bin $BIN_NAME --target ${{ matrix.target }}
 
       - name: Prepare release artifact
