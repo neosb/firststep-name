@@ -17,7 +17,7 @@ clap = { version = "4.5.32", features = ["derive"] }
 chrono = "0.4.40"
 url = "2.5.4"
 # Use rustls-tls for TLS instead of openssl
-poem = { version = "3.1.8", features = ["websocket", "test", "static-files"], default-features = false, features = ["rustls-tls"] }
+poem = { version = "3.1.8", features = ["websocket", "test", "static-files", "rustls-tls"], default-features = false}
 libc = "0.2.171"
 askama = { version = "0.13.0", features = ["code-in-doc"] }
 tokio-tungstenite = { version = "0.26.2", features = ["rustls"] }
