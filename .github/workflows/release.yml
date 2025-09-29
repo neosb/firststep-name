@@ -52,13 +52,18 @@ jobs:
         if: runner.os == 'Linux'
         run: cargo install cross
 
-      - name: Build binary
-        run: |
-          if [ "${{ runner.os }}" = "Linux" ]; then
-            cross build --release --bin $BIN_NAME --target ${{ matrix.target }}
-          else
-            cargo build --release --bin $BIN_NAME --target ${{ matrix.target }}
-          fi
+      - name: Build binary (Linux)
+        if: runner.os == 'Linux'
+        run: cross build --release --bin $BIN_NAME --target ${{ matrix.target }}
+
+      - name: Build binary (macOS)
+        if: runner.os == 'macOS'
+        run: cargo build --release --bin $BIN_NAME --target ${{ matrix.target }}
+
+      - name: Build binary (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: cargo build --release --bin $BIN_NAME --target ${{ matrix.target }}
 
       - name: Prepare release artifact
         run: |
