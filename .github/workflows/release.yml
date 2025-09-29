@@ -85,6 +85,7 @@ jobs:
         run: cargo build --release --bin $BIN_NAME --target ${{ matrix.target }}
 
       - name: Prepare release artifact
+        shell: bash
         run: |
           mkdir -p release_artifacts
           if [ "${{ matrix.archive }}" = "tar.gz" ]; then
